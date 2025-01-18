@@ -224,13 +224,13 @@ In a running system, user mode applications often need services that only the ke
 The `ecall` instruction is used to make a system call. The specific system call is determined by the `a7` register.
 
 RISC-V defines the `ecall` instruction (short for environment call) to trigger a trap into the kernel (running in S-mode or M-mode, depending on the setup). Conceptually, the process looks like this:
-	1.	A user-mode program prepares arguments in the appropriate registers (e.g., a0, a1, …, a7), including something like a system call number in a7 (common in many RISC-V OS examples).
-	2.	It executes:
 
-```asm
-ecall
-```
-    3. The CPU then jumps to a trap handler in the kernel(S-mode).
+1. A user-mode program prepares arguments in the appropriate registers (e.g., a0, a1, …, a7), including something like a system call number in a7 (common in many RISC-V OS examples).
+2. It executes:
+    ```asm
+    ecall
+    ```
+3. The CPU then jumps to a trap handler in the kernel(S-mode).
     4. The kernel trap handler checks the cause of the trap (which will indicate an `ecall` from user mode).
     5. Based on the system call number (ex: a7 = 4 for print), the kernel performs the appropriate action (e.g., read, write, open file, etc.)
     6. The result of the operation is placed back into one of the argument registers (e.g., a0 for return value), and the kernel returns to user mode (using sret or a similar mechanism).

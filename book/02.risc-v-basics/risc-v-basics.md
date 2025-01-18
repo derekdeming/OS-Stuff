@@ -217,6 +217,105 @@ addi sp, sp, 4 # Increment sp by 4 to point to the next slot on the stack
 [!TIP]
 In C, the compiler automatically generates these stack operations for local variables and function calls, so you rarely need to write them manually in assembly.
 
+---
+
+### CPU Modes
+
+A CPU can operate in multiple privileged levels. RISC-V defines 3 core modes (U-mode, S-mode, M-mode) and 2 optional modes (H-mode, D-mode):
+
+| Mode | Description |
+|------|-------------|
+| **User mode (U-mode)** | Normal user applications run here with the least privilege. |
+| **Supervisor mode (S-mode)** | The operating system (OS) kernel or hypervisor host typically runs here. |
+| **Machine mode (M-mode)** | The highest privilege; essentially “bare metal.” Firmware (like OpenSBI) and low-level initialization run in M-mode. |
+| **Hypervisor mode (H-mode)** | An *optional* extension in newer RISC-V specs. If implemented, it allows a hypervisor/virtual machine monitor (VMM) to manage multiple virtual machines. |
+| **Debug mode (D-mode)** | A *special* mode generally used for hardware or JTAG debugging. It’s often described separately from the standard privilege levels since it’s an out-of-band mechanism used by debuggers. |
+
+---
+
+### Privileged Instructions
+
+In **RISC-V**, some instructions can only be executed by the operating system or low-level firmware (i.e., in **S-mode** or **M-mode**) because they manage critical hardware resources and system state. If a user-mode program attempts to run these instructions, the CPU triggers a **trap** to prevent the application from violating security or stability constraints.
+
+Below are some of the **privileged instructions** we will use in this book. They are essential for tasks like reading and writing **Control and Status Registers (CSRs)**, handling traps, and invalidating cached memory translations.
+
+| Opcode & Operands    | Description                                                                 | Pseudocode                                  |
+|----------------------|-----------------------------------------------------------------------------|---------------------------------------------|
+| `csrr rd, csr`       | **Read** from a CSR (Control and Status Register)                           | `rd = csr;`                                 |
+| `csrw csr, rs`       | **Write** to a CSR                                                          | `csr = rs;`                                 |
+| `csrrw rd, csr, rs`  | **Read** from and **write** to a CSR at once                                | `tmp = csr; csr = rs; rd = tmp;`            |
+| `sret`               | **Return** from a trap handler, restoring the previous context (PC, mode)   | *(varies internally)*                       |
+| `sfence.vma`         | **Invalidate** (flush) the Translation Lookaside Buffer (**TLB**)           | *(varies internally)*                       |
+
+A **CSR (Control and Status Register)** holds various hardware and configuration settings, such as interrupt vectors, trap addresses, or CPU mode information. The complete list of CSRs and their purposes can be found in the [RISC-V Privileged Specification](https://riscv.org/specifications/privileged-isa/).
+
+> [!TIP]
+> **Digging Deeper**
+> Some instructions, such as `sret`, perform multiple hidden steps (e.g., changing CPU mode and restoring program counters). If you're curious about the low-level details, check out a RISC-V emulator’s source code. For example, [rvemu](https://github.com/d0iasm/rvemu) has concise and readable implementations (see their [sret logic](https://github.com/d0iasm/rvemu/blob/f55eb5b376f22a73c0cf2630848c03f8d5c93922/src/cpu.rs#L3357-L3400)) that illustrate what happens behind the scenes. Understanding these nuances will help you debug more effectively when developing your OS.
+
+---
+
+### Inline Assembly
+
+In the upcoming chapters, you'll often see **inline assembly**, which is a way to write assembly code directly inside your C source files. Although it's possible to place assembly in a separate file (typically with a `.S` extension), inline assembly provides several advantages:
+
+1. **Direct usage of C variables:**
+   You can reference C variables in your assembly code and store the results back into those variables without extra boilerplate.
+2. **Automatic register management:**
+   The compiler knows which registers you plan to use (through constraints) and saves/restores them as needed, reducing the risk of accidentally clobbering important data.
+3. **Better optimization:**
+   Inline assembly can be optimized by the compiler in conjunction with your C code, resulting in more efficient binaries (especially if using `__volatile__` is not strictly necessary for every case).
+
+### Example of Inline Assembly
+
+```c
+uint32_t value;
+__asm__ __volatile__("csrr %0, sepc" : "=r"(value));
+```
+
+In this example, the `csrr` instruction reads the `sepc` CSR into the `value` variable. The `volatile` keyword ensures that the compiler doesn't optimize away the instruction, which is crucial for correctness in low-level code.
+
+#### Inline Assembly Syntax
+
+The general syntax for inline assembly in GCC/Clang is:
+
+```c
+__asm__ __volatile__(
+    "assembly code"
+    : output operands (example: "=r"(value))
+    : input operands (example: "r"(0))
+    : clobbered registers (example: "memory")
+);
+
+__asm__("assembly code" : "=r"(value) : "r"(0) : "memory");
+```
+
+- **assembly code**: A string literal containing assembly instructions to be executed.
+- **output operands**: A list of operands that will receive values from the assembly code.
+- **input operands**: A list of operands that will provide values to the assembly code.
+- **clobbered registers**: A list of registers that are modified by the assembly code. If you omit them, the compiler might resuse these registers, causing incorrect behavior.
+
+| Part | Description |
+|------|-------------|
+| `__asm__` | Indicates that you're writing inline assembly. |
+| `__volatile__` | Prevents the compiler from optimizing or reordering the assembly block. |
+| `"assembly code"` | Actual instructions, written as a string literal. |
+| `output operands` | Variables in which you store the results of the assembly block. |
+| `input operands` | Constants or variables you pass into the assembly block. |
+| `clobbered registers` | Registers modified by your assembly. Telling the compiler avoids corrupting those registers' data. |
+
+
+#### Operand Constraints
+
+Each operand follows a `constraint` letter that informs the compiler how to handle it (e.g., is it stored in a register, does it accept immediate values, etc.). Common constraints include:
+
+- `r`: For an input operand, the operand is a register. For an output operand, the operand is a register that will receive the result.
+- `i`: The operand is an immediate value.
+- `m`: The operand is a memory address.
+- `a`: The operand is a special register (e.g., `a0` for function arguments).
+
+---
+
 ### System Calls
 
 In a running system, user mode applications often need services that only the kernel can provide, such as reading from the keyboard, writing to the screen, accessing files, or communicating with peripherals. These requests are made through system calls.
@@ -224,16 +323,16 @@ In a running system, user mode applications often need services that only the ke
 The `ecall` instruction is used to make a system call. The specific system call is determined by the `a7` register.
 
 RISC-V defines the `ecall` instruction (short for environment call) to trigger a trap into the kernel (running in S-mode or M-mode, depending on the setup). Conceptually, the process looks like this:
-	1.	A user-mode program prepares arguments in the appropriate registers (e.g., a0, a1, …, a7), including something like a system call number in a7 (common in many RISC-V OS examples).
-	2.	It executes:
 
-```asm
-ecall
-```
-    3. The CPU then jumps to a trap handler in the kernel(S-mode).
-    4. The kernel trap handler checks the cause of the trap (which will indicate an `ecall` from user mode).
-    5. Based on the system call number (ex: a7 = 4 for print), the kernel performs the appropriate action (e.g., read, write, open file, etc.)
-    6. The result of the operation is placed back into one of the argument registers (e.g., a0 for return value), and the kernel returns to user mode (using sret or a similar mechanism).
+1. A user-mode program prepares arguments in the appropriate registers (e.g., a0, a1, …, a7), including something like a system call number in a7 (common in many RISC-V OS examples).
+2. It executes:
+    ```asm
+    ecall
+    ```
+3. The CPU then jumps to a trap handler in the kernel(S-mode).
+4. The kernel trap handler checks the cause of the trap (which will indicate an `ecall` from user mode).
+5. Based on the system call number (ex: a7 = 4 for print), the kernel performs the appropriate action (e.g., read, write, open file, etc.)
+6. The result of the operation is placed back into one of the argument registers (e.g., a0 for return value), and the kernel returns to user mode (using `sret` or a similar mechanism).
 
 For example, a user program might do something like this:
 

@@ -231,9 +231,9 @@ RISC-V defines the `ecall` instruction (short for environment call) to trigger a
     ecall
     ```
 3. The CPU then jumps to a trap handler in the kernel(S-mode).
-    4. The kernel trap handler checks the cause of the trap (which will indicate an `ecall` from user mode).
-    5. Based on the system call number (ex: a7 = 4 for print), the kernel performs the appropriate action (e.g., read, write, open file, etc.)
-    6. The result of the operation is placed back into one of the argument registers (e.g., a0 for return value), and the kernel returns to user mode (using sret or a similar mechanism).
+4. The kernel trap handler checks the cause of the trap (which will indicate an `ecall` from user mode).
+5. Based on the system call number (ex: a7 = 4 for print), the kernel performs the appropriate action (e.g., read, write, open file, etc.)
+6. The result of the operation is placed back into one of the argument registers (e.g., a0 for return value), and the kernel returns to user mode (using `sret` or a similar mechanism).
 
 For example, a user program might do something like this:
 

@@ -180,3 +180,17 @@ To compile and run the kernel, we can use the `run.sh` script.
 ```bash
 ./run.sh
 ```
+
+This `run.sh` script is a simple script that compiles the kernel and runs it on QEMU. It uses the `qemu-system-riscv32` command to run the kernel. It also points to the `kernel.ld` linker script, as well as the `kernel.c` source file and `start.c` source file.
+
+---
+
+## Conclusion
+
+We've successfully printed "Hello, World!" from a RISC-V kernel running in S-mode under QEMU with OpenSBI in M-mode. While its a simple example, it sets the stage for more complex systems and demonstrates the foundational flow of control:
+
+1. Power-up / Reset --> OpenSBI in M-Mode
+2. SBI sets up the env --> jumps to your _start label in S-mode
+3. _start --> calls kernel_main()
+4. Our code --> issues an SBI call (`ecall`) --> returns from M-mode --> prints a character to the console
+5. Our code --> enters an infinite loop --> spins forever

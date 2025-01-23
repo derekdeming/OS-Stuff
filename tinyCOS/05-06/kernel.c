@@ -21,8 +21,8 @@ struct sbiret sbi_call(long arg0, long arg1, long arg2,
     __asm__ __volatile__ ("ecall"
         : "=r"(a0), "=r"(a1)
         : "r"(a0), "r"(a1), "r"(a2),
-          "r"(a3), "r"(a4), "r"(a5),
-          "r"(a6), "r"(a7)
+        "r"(a3), "r"(a4), "r"(a5),
+        "r"(a6), "r"(a7)
         : "memory");
 
     struct sbiret ret;
@@ -33,8 +33,12 @@ struct sbiret sbi_call(long arg0, long arg1, long arg2,
 
 void putchar(char ch)
 {
-    // Using fid=1, eid=0 for a legacy console putchar in many SBI specs.
-    sbi_call(ch, 0, 0, 0, 0, 0, 1, 0);
+    // Legacy console putchar (SBI call #1)
+    sbi_call(ch, 0, 0, 0, 0, 0, /* fid */ 0, /* eid */ 1);
+    //  So that after the "sbi_call" macro expansion, we have:
+    //      a0 = ch
+    //      a7 = 1
+    // Which is what older QEMU/OpenSBI expects for console_putchar.
 }
 
 void kernel_main(void)

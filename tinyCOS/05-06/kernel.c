@@ -1,5 +1,6 @@
 // kernel.c
 #include "kernel.h"
+#include "common.h"
 
 // Optional externs if you're clearing BSS or referencing linker symbols:
 // extern char __bss[], __bss_end[];
@@ -44,9 +45,11 @@ void kernel_main(void)
     // }
 
     const char *hello = "Hello, World!\n";
-    for (const char *p = hello; *p != '\0'; p++) {
-        putchar(*p);
-    }
+    printf("%s", hello);
+    printf("1 + 2 = %d, %x\n", 1 + 2, 0x1234abcd);
+    // for (const char *p = hello; *p != '\0'; p++) {
+    //     putchar(*p);
+    // }
 
     // Halt/idle forever
     while (1) {

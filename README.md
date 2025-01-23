@@ -2,7 +2,7 @@ this repository is a fun project to learn about the basics of operating systems.
 
 It will cover the basics of operating systems and how they work. I will try to put as much details in the code as possible. 
 
-I will be using the book created by Seiya Nuta called [Operating System in 1000 Lines](https://operating-system-in-1000-lines.vercel.app/en/) as a guide for the C based tinyOS. As part of the table of contents, it will cover the following topics:
+I will be using the book created by Seiya Nuta called [Operating System in 1000 Lines](https://operating-system-in-1000-lines.vercel.app/en/) as a guide for the C based tinyOS and then I will convert this over to Zig help learn the language. As part of the table of contents, it will cover the following topics:
 
 - [x] 00. Introduction
 - [x] 01. Hello, World!

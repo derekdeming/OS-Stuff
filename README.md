@@ -6,10 +6,10 @@ I will be using the book created by Seiya Nuta called [Operating System in 1000 
 
 - [x] 00. Introduction
 - [x] 01. Hello, World!
-- [ ] 02. C Standard Library
-- [ ] 03. Kernel Panic
-- [ ] 04. Exceptions
-- [ ] 05. Memory Management
+- [x] 02. C Standard Library
+- [x] 03. Kernel Panic
+- [x] 04. Exceptions
+- [x] 05. Memory Management
 - [ ] 06. Process Management
 - [ ] 07. Page Tables
 - [ ] 08. Application

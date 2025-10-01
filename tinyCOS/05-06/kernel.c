@@ -268,6 +268,7 @@ void kernel_main(void)
     idle_proc = create_process(0);
     idle_proc->pid = 0;
     current_proc = idle_proc;
+    WRITE_CSR(sscratch, (uint32_t) &idle_proc->stack[sizeof(idle_proc->stack)]);
 
     proc_a = create_process((uint32_t) proc_a_entry);
     proc_b = create_process((uint32_t) proc_b_entry);
